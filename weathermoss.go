@@ -89,7 +89,9 @@ func main() {
 	// Define the API (JSON) routes
 	api := api.NewApiHandlers(db)
 	router.GetFunc("/api/current", api.Current)
-	router.GetFunc("/api/ws", api.WsHandler)
+	router.GetFunc("/api/ws", api.WsCombinedHandler)
+	router.GetFunc("/api/ws/10min", api.WsTenMinuteHandler)
+	router.GetFunc("/api/ws/15sec", api.WsFifteenSecHandler)
 
 	// Start the HTTP server
 	fmt.Println("Starting API server on port", *flgPortNum, ". Press Ctrl-C to quit.")

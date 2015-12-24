@@ -1,8 +1,6 @@
 package api
 
 import (
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
 	jww "github.com/spf13/jwalterweatherman"
 	"net/http"
@@ -21,9 +19,6 @@ const (
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
-
-	// How often do we check the DB for an update?
-	dbPollPeriod = 1 * time.Second
 )
 
 var (
@@ -33,7 +28,7 @@ var (
 	}
 )
 
-func (a *ApiHandlers) WsHandler(w http.ResponseWriter, r *http.Request) {
+func (a *ApiHandlers) WsCombinedHandler(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
@@ -42,7 +37,33 @@ func (a *ApiHandlers) WsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go writer(ws, a.db)
+	go writer(ws, a)
+	reader(ws)
+}
+
+func (a *ApiHandlers) WsFifteenSecHandler(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		if _, ok := err.(websocket.HandshakeError); !ok {
+			jww.FATAL.Println(err)
+		}
+		return
+	}
+
+	go writerFifteenSec(ws, a)
+	reader(ws)
+}
+
+func (a *ApiHandlers) WsTenMinuteHandler(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		if _, ok := err.(websocket.HandshakeError); !ok {
+			jww.FATAL.Println(err)
+		}
+		return
+	}
+
+	go writerTenMin(ws, a)
 	reader(ws)
 }
 
@@ -60,36 +81,48 @@ func reader(ws *websocket.Conn) {
 	}
 }
 
-// writer runs in a goroutine for each connected WS client.
-func writer(ws *websocket.Conn, db *sql.DB) {
+// writer runs in a goroutine for each connected WS client. It emits all message returned by the observer.
+func writer(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	dbTicker := time.NewTicker(dbPollPeriod)
+	observer := a.getDBObserver()
 	defer func() {
 		pingTicker.Stop()
-		dbTicker.Stop()
 		ws.Close()
 	}()
 
-	// last-result tracking for this particularl connection. Initialize to epoch so that .After() returns true the first time no matter what
-	var (
-		lastFifteenSecRes = time.Unix(0, 0)
-		last10MinuteRes   = time.Unix(0, 0)
-	)
+	for {
+		select {
+		case msg := <-observer:
+			ws.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := ws.WriteJSON(msg); err != nil {
+				return
+			}
+		case <-pingTicker.C:
+			ws.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
+		}
+	}
+}
+
+// writerTenMin runs in a goroutine for each connected WS client, but only
+// emits a message on the connected socket if the monitor returns a new
+// TenMinute message.
+func writerTenMin(ws *websocket.Conn, a *ApiHandlers) {
+	pingTicker := time.NewTicker(pingPeriod)
+	observer := a.getDBObserver()
+	defer func() {
+		pingTicker.Stop()
+		ws.Close()
+	}()
 
 	for {
 		select {
-		case <-dbTicker.C:
-			results, err := pollDB(db, &lastFifteenSecRes, &last10MinuteRes)
-
-			if err != nil {
-				// Errors have been logged upstream in polldb.
-				// TODO: Can we return an error state to the client? Do they need to retry?
-				return
-			}
-
-			for _, res := range results {
+		case msg := <-observer:
+			if msg.MsgType == TenMinute {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
-				if err := ws.WriteJSON(res); err != nil {
+				if err := ws.WriteJSON(msg); err != nil {
 					return
 				}
 			}
@@ -102,61 +135,31 @@ func writer(ws *websocket.Conn, db *sql.DB) {
 	}
 }
 
-// pollDB is a helper function to writer() and is being called every dbTicker seconds for each websocket connection
-func pollDB(db *sql.DB, lastFifteenSecRes *time.Time, last10MinuteRes *time.Time) ([]WSMessage, error) {
-	res := make([]WSMessage, 0)
+// writerFifteenSec runs in a goroutine for each connected WS client, but only
+// emits a message on the connected socket if the monitor returns a new
+// FifteenSecWind message.
+func writerFifteenSec(ws *websocket.Conn, a *ApiHandlers) {
+	pingTicker := time.NewTicker(pingPeriod)
+	observer := a.getDBObserver()
+	defer func() {
+		pingTicker.Stop()
+		ws.Close()
+	}()
 
-	rows, err := db.Query("SELECT * FROM housestation_15sec_wind ORDER BY ID DESC LIMIT 1")
-	if err != nil {
-		jww.ERROR.Println(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		f := FifteenSecWindMsg{}
-		err := rows.Scan(&f.ID, &f.DateTime, &f.WindDirCur, &f.WindDirCurEng, &f.WindSpeedCur)
-		if err != nil {
-			jww.ERROR.Println(err)
-		}
-
-		if f.DateTime.After(*lastFifteenSecRes) {
-			r1 := WSMessage{
-				MsgType: FifteenSecWind,
-				Payload: f,
+	for {
+		select {
+		case msg := <-observer:
+			if msg.MsgType == FifteenSecWind {
+				ws.SetWriteDeadline(time.Now().Add(writeWait))
+				if err := ws.WriteJSON(msg); err != nil {
+					return
+				}
 			}
-			res = append(res, r1)
-			*lastFifteenSecRes = f.DateTime
+		case <-pingTicker.C:
+			ws.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
 		}
-
-	}
-	err = rows.Err()
-	if err != nil {
-		jww.ERROR.Println(err)
-	}
-
-	// See if there's an updated 10 minute result
-	trrows, err := db.Query("SELECT * FROM housestation_10min_all ORDER BY ID DESC LIMIT 1")
-	if err != nil {
-		jww.ERROR.Println(err)
-	}
-	defer trrows.Close()
-	for trrows.Next() {
-		t := TenMinAllRow{}
-		err := trrows.Scan(&t.ID, &t.DateTime, &t.TempOutCur, &t.HumOutCur, &t.PressCur, &t.DewCur, &t.HeatIdxCur, &t.WindChillCur, &t.TempInCur,
-			&t.HumInCur, &t.WindSpeedCur, &t.WindAvgSpeedCur, &t.WindDirCur, &t.WindDirCurEng, &t.WindGust10, &t.WindDirAvg10, &t.WindDirAvg10Eng,
-			&t.UVAvg10, &t.UVMax10, &t.SolarRadAvg10, &t.SolarRadMax10, &t.RainRateCur, &t.RainDay, &t.RainYest, &t.RainMonth, &t.RainYear)
-		if err != nil {
-			jww.ERROR.Println(err)
-		}
-
-		if t.DateTime.After(*last10MinuteRes) {
-			res = append(res, WSMessage{MsgType: TenMinute, Payload: t})
-			*last10MinuteRes = t.DateTime
-		}
-	}
-
-	if len(res) > 0 {
-		return res, nil
-	} else {
-		return nil, nil
 	}
 }
