@@ -56,8 +56,14 @@ func main() {
 		os.Exit(0)
 	}()
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", appconf.DB.Username, appconf.DB.Password, appconf.DB.Database)) //"user:password@/dbname")
+	jww.DEBUG.Println(fmt.Sprintf("Connecting to db: %s:%s@tcp(%s:%s)/%s?parseTime=true", appconf.DB.Username, appconf.DB.Password, appconf.DB.Host, appconf.DB.Port, appconf.DB.Database))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", appconf.DB.Username, appconf.DB.Password, appconf.DB.Host, appconf.DB.Port, appconf.DB.Database))
 	if err != nil {
+		jww.FATAL.Println("Failed to open database. Error was:", err)
+		os.Exit(1)
+	}
+
+	if err := db.Ping(); err != nil {
 		jww.FATAL.Println("Failed to open database. Error was:", err)
 		os.Exit(1)
 	}
@@ -83,7 +89,7 @@ func main() {
 	// Define the API (JSON) routes
 	api := api.NewApiHandlers(db)
 	router.GetFunc("/api/current", api.Current)
-	router.GetFunc("/api/ws", api.WSHandler)
+	router.GetFunc("/api/ws", api.WsHandler)
 
 	// Start the HTTP server
 	fmt.Println("Starting API server on port", *flgPortNum, ". Press Ctrl-C to quit.")

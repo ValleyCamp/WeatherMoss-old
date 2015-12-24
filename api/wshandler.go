@@ -1,7 +1,7 @@
 package api
 
 import (
-	//"database/sql"
+	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
 	jww "github.com/spf13/jwalterweatherman"
@@ -31,14 +31,12 @@ var (
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
+
+	lastFifteenSecRes time.Time
+	last10MinuteRes   time.Time
 )
 
-type WSMessage struct {
-	MsgType string `json:"msgType"`
-	Payload string `json:"payload"`
-}
-
-func WsHandler(w http.ResponseWriter, r *http.Request) {
+func (a *ApiHandlers) WsHandler(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
@@ -47,7 +45,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go writer(ws)
+	go writer(ws, a.db)
 	reader(ws)
 }
 
@@ -66,7 +64,7 @@ func reader(ws *websocket.Conn) {
 }
 
 // writer runs in a goroutine for each connected WS client.
-func writer(ws *websocket.Conn) {
+func writer(ws *websocket.Conn, db *sql.DB) {
 	pingTicker := time.NewTicker(pingPeriod)
 	dbTicker := time.NewTicker(dbPollPeriod)
 	defer func() {
@@ -77,7 +75,8 @@ func writer(ws *websocket.Conn) {
 	for {
 		select {
 		case <-dbTicker.C:
-			results, err := pollDB()
+			results, err := pollDB(db)
+
 			if err != nil {
 				// Errors have been logged upstream in polldb.
 				// TODO: Can we return an error state to the client? Do they need to retry?
@@ -99,8 +98,61 @@ func writer(ws *websocket.Conn) {
 	}
 }
 
-func pollDB() ([]WSMessage, error) {
-	// TODO: Poll db for updates in the last dbPollPeriod, return a list of all changes.
+func pollDB(db *sql.DB) ([]WSMessage, error) {
+	res := make([]WSMessage, 0)
 
-	return nil, nil
+	rows, err := db.Query("SELECT * FROM housestation_15sec_wind ORDER BY ID DESC LIMIT 1")
+	if err != nil {
+		jww.ERROR.Println(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		f := FifteenSecWindMsg{}
+		err := rows.Scan(&f.ID, &f.DateTime, &f.WindDirCur, &f.WindDirCurEng, &f.WindSpeedCur)
+		//err := rows.Scan(&id, &dateTime, &windDirCur, &windDirCurEng, &windSpeedCur)
+		if err != nil {
+			jww.ERROR.Println(err)
+		}
+
+		if f.DateTime.After(lastFifteenSecRes) {
+			r1 := WSMessage{
+				MsgType: FifteenSecWind,
+				Payload: f,
+			}
+			res = append(res, r1)
+			lastFifteenSecRes = f.DateTime
+		}
+
+	}
+	err = rows.Err()
+	if err != nil {
+		jww.ERROR.Println(err)
+	}
+
+	// See if there's an updated 10 minute result
+	trrows, err := db.Query("SELECT * FROM housestation_10min_all ORDER BY ID DESC LIMIT 1")
+	if err != nil {
+		jww.ERROR.Println(err)
+	}
+	defer trrows.Close()
+	for trrows.Next() {
+		t := TenMinAllRow{}
+		err := trrows.Scan(&t.ID, &t.DateTime, &t.TempOutCur, &t.HumOutCur, &t.PressCur, &t.DewCur, &t.HeatIdxCur, &t.WindChillCur, &t.TempInCur,
+			&t.HumInCur, &t.WindSpeedCur, &t.WindAvgSpeedCur, &t.WindDirCur, &t.WindDirCurEng, &t.WindGust10, &t.WindDirAvg10, &t.WindDirAvg10Eng,
+			&t.UVAvg10, &t.UVMax10, &t.SolarRadAvg10, &t.SolarRadMax10, &t.RainRateCur, &t.RainDay, &t.RainYest, &t.RainMonth, &t.RainYear)
+		if err != nil {
+			jww.ERROR.Println(err)
+		}
+
+		if t.DateTime.After(last10MinuteRes) {
+			res = append(res, WSMessage{MsgType: TenMinute, Payload: t})
+			last10MinuteRes = t.DateTime
+		}
+	}
+
+	if len(res) > 0 {
+		return res, nil
+	} else {
+		return nil, nil
+	}
 }

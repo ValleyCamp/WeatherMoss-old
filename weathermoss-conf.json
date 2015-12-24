@@ -2,6 +2,7 @@
   "database": {
     "host": "",
     "username": "",
+    "port": "",
     "password": "",
     "database": ""
   }
