@@ -4,18 +4,12 @@ import (
 	"time"
 )
 
-//go:generate stringer -type=MsgType
-type MsgType int
+type MsgType string
 
 const (
-	FifteenSecWind MsgType = iota
-	TenMinute
+	FifteenSecWind MsgType = "FifteenSecWind"
+	TenMinute              = "TenMinute"
 )
-
-// TODO: Figure out why this isn't causing the MsgType to print as a string in the JSON
-func (m *MsgType) MarshalJSON() ([]byte, error) {
-	return ([]byte(m.String())), nil
-}
 
 type WSMessage struct {
 	MsgType MsgType     `json:"msgType"`
