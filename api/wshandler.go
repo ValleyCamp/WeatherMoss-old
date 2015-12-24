@@ -31,9 +31,6 @@ var (
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
-
-	lastFifteenSecRes time.Time
-	last10MinuteRes   time.Time
 )
 
 func (a *ApiHandlers) WsHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,10 +69,17 @@ func writer(ws *websocket.Conn, db *sql.DB) {
 		dbTicker.Stop()
 		ws.Close()
 	}()
+
+	// last-result tracking for this particularl connection. Initialize to epoch so that .After() returns true the first time no matter what
+	var (
+		lastFifteenSecRes = time.Unix(0, 0)
+		last10MinuteRes   = time.Unix(0, 0)
+	)
+
 	for {
 		select {
 		case <-dbTicker.C:
-			results, err := pollDB(db)
+			results, err := pollDB(db, &lastFifteenSecRes, &last10MinuteRes)
 
 			if err != nil {
 				// Errors have been logged upstream in polldb.
@@ -98,7 +102,8 @@ func writer(ws *websocket.Conn, db *sql.DB) {
 	}
 }
 
-func pollDB(db *sql.DB) ([]WSMessage, error) {
+// pollDB is a helper function to writer() and is being called every dbTicker seconds for each websocket connection
+func pollDB(db *sql.DB, lastFifteenSecRes *time.Time, last10MinuteRes *time.Time) ([]WSMessage, error) {
 	res := make([]WSMessage, 0)
 
 	rows, err := db.Query("SELECT * FROM housestation_15sec_wind ORDER BY ID DESC LIMIT 1")
@@ -109,18 +114,17 @@ func pollDB(db *sql.DB) ([]WSMessage, error) {
 	for rows.Next() {
 		f := FifteenSecWindMsg{}
 		err := rows.Scan(&f.ID, &f.DateTime, &f.WindDirCur, &f.WindDirCurEng, &f.WindSpeedCur)
-		//err := rows.Scan(&id, &dateTime, &windDirCur, &windDirCurEng, &windSpeedCur)
 		if err != nil {
 			jww.ERROR.Println(err)
 		}
 
-		if f.DateTime.After(lastFifteenSecRes) {
+		if f.DateTime.After(*lastFifteenSecRes) {
 			r1 := WSMessage{
 				MsgType: FifteenSecWind,
 				Payload: f,
 			}
 			res = append(res, r1)
-			lastFifteenSecRes = f.DateTime
+			*lastFifteenSecRes = f.DateTime
 		}
 
 	}
@@ -144,9 +148,9 @@ func pollDB(db *sql.DB) ([]WSMessage, error) {
 			jww.ERROR.Println(err)
 		}
 
-		if t.DateTime.After(last10MinuteRes) {
+		if t.DateTime.After(*last10MinuteRes) {
 			res = append(res, WSMessage{MsgType: TenMinute, Payload: t})
-			last10MinuteRes = t.DateTime
+			*last10MinuteRes = t.DateTime
 		}
 	}
 
