@@ -1,0 +1,295 @@
+{
+	"version": 1,
+	"allow_edit": true,
+	"plugins": [],
+	"panes": [
+		{
+			"title": "Current Wind",
+			"width": 1,
+			"row": {
+				"2": 1,
+				"3": 1,
+				"4": 1
+			},
+			"col": {
+				"2": 1,
+				"3": 1,
+				"4": 1
+			},
+			"col_width": 1,
+			"widgets": [
+				{
+					"type": "gauge",
+					"settings": {
+						"value": "datasources[\"ws15sec\"][\"payload\"][\"WindSpeedCur\"]",
+						"units": "MPH",
+						"min_value": 0,
+						"max_value": "60"
+					}
+				},
+				{
+					"type": "pointer",
+					"settings": {
+						"direction": "datasources[\"ws15sec\"][\"payload\"][\"WindDirCur\"]",
+						"value_text": "datasources[\"ws15sec\"][\"payload\"][\"WindDirCurEng\"]"
+					}
+				},
+				{
+					"type": "sparkline",
+					"settings": {
+						"title": "Recent Speed",
+						"value": [
+							"datasources[\"ws15sec\"][\"payload\"][\"WindSpeedCur\"]"
+						]
+					}
+				}
+			]
+		},
+		{
+			"title": "Current (10-minute) conditions",
+			"width": 1,
+			"row": {
+				"2": 1,
+				"4": 1
+			},
+			"col": {
+				"2": 2,
+				"4": 4
+			},
+			"col_width": 1,
+			"widgets": [
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Temperature",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"TempOutCur\"]",
+						"sparkline": true,
+						"animate": true,
+						"units": "°F"
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Temp with Wind Chill",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"WindChillCur\"]",
+						"sparkline": true,
+						"animate": true,
+						"units": "°F"
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Pressure",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"PressCur\"]",
+						"sparkline": true,
+						"animate": true,
+						"units": "Millibars (?)"
+					}
+				},
+				{
+					"type": "gauge",
+					"settings": {
+						"title": "Humidity",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"HumOutCur\"]",
+						"min_value": 0,
+						"max_value": 100
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Rain Rate",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"RainRateCur\"]",
+						"sparkline": true,
+						"animate": true,
+						"units": "In/Hr (?)"
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Heat Index",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"HeatIdxCur\"]",
+						"sparkline": true,
+						"animate": true
+					}
+				}
+			]
+		},
+		{
+			"title": "Solar and UV (10-minute)",
+			"width": 1,
+			"row": {
+				"2": 21,
+				"4": 1
+			},
+			"col": {
+				"2": 1,
+				"4": 2
+			},
+			"col_width": 1,
+			"widgets": [
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "UV Avg",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"UVAvg10\"]",
+						"sparkline": true,
+						"animate": true
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "UV Max",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"UVMax10\"]",
+						"sparkline": true,
+						"animate": true
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Solar Radiation Avg",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"SolarRadAvg10\"]",
+						"sparkline": true,
+						"animate": true
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Solar Radiation Max",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"SolarRadMax10\"]",
+						"sparkline": true,
+						"animate": true
+					}
+				}
+			]
+		},
+		{
+			"title": "Rainfall Totals",
+			"width": 1,
+			"row": {
+				"2": 29,
+				"4": 15
+			},
+			"col": {
+				"2": 2,
+				"4": 3
+			},
+			"col_width": 1,
+			"widgets": [
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Today",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"RainDay\"]",
+						"animate": true
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Yesterday",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"RainYest\"]",
+						"animate": true
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Month-to-date",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"RainMonth\"]",
+						"animate": true
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Year-to-date",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"RainYear\"]",
+						"animate": true
+					}
+				}
+			]
+		},
+		{
+			"title": "Wind (10-minute)",
+			"width": 1,
+			"row": {
+				"2": 39,
+				"4": 1
+			},
+			"col": {
+				"2": 1,
+				"4": 3
+			},
+			"col_width": 1,
+			"widgets": [
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Max Gust",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"WindGust10\"]",
+						"sparkline": true,
+						"animate": true,
+						"units": "MPH"
+					}
+				},
+				{
+					"type": "gauge",
+					"settings": {
+						"title": "Average",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"WindAvgSpeedCur\"]",
+						"units": "MPH",
+						"min_value": 0,
+						"max_value": "50"
+					}
+				},
+				{
+					"type": "text_widget",
+					"settings": {
+						"title": "Average Direction",
+						"size": "regular",
+						"value": "datasources[\"ws10min\"][\"payload\"][\"WindDirAvg10Eng\"]",
+						"animate": true
+					}
+				}
+			]
+		}
+	],
+	"datasources": [
+		{
+			"name": "ws10min",
+			"type": "JSON WebSocket",
+			"settings": {
+				"url": "/10min"
+			}
+		},
+		{
+			"name": "ws15sec",
+			"type": "JSON WebSocket",
+			"settings": {
+				"url": "/15sec"
+			}
+		}
+	],
+	"columns": 4
+}

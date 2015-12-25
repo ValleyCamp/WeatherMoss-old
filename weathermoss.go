@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/go-zoo/bone"
 	jww "github.com/spf13/jwalterweatherman"
 	"net/http"
@@ -15,6 +16,10 @@ import (
 
 	"github.com/valleycamp/weathermoss/api"
 )
+
+// By default go generate is going to build the production version. Run the command with -debug flag for
+// easier local development of static assets.
+//go:generate go-bindata-assetfs -pkg main -prefix "gui/assets/" gui/assets/...
 
 func main() {
 	flgVerbose := flag.Bool("verbose", false, "Output additional debugging information to both STDOUT and the log file")
@@ -75,13 +80,12 @@ func main() {
 	// Set up the HTTP router, followed by all the routes
 	router := bone.New()
 
-	/*
-		// Redirect static resources, and then handle the static resources (/gui/) routes with the static asset file
-		router.Handle("/", http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-			http.Redirect(response, request, "/gui/", 302)
-		}))
-		router.Get("/gui/", http.StripPrefix("/gui/", http.FileServer(&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""})))
-	*/
+	// Redirect static resources, and then handle the static resources (/gui/) routes with the static asset file
+	router.Handle("/", http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		http.Redirect(response, request, "/gui/", 302)
+	}))
+	router.Get("/gui/", http.StripPrefix("/gui/", http.FileServer(&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""})))
+
 	router.GetFunc("/api", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to Weathermoss"))
 	})
