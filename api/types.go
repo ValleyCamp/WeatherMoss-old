@@ -24,7 +24,7 @@ func NewApiHandlers(d *sql.DB) *ApiHandlers {
 		monitor: &dbMonitor{
 			lastFifteenSecResTime: time.Unix(0, 0),
 			lastTenMinResTime:     time.Unix(0, 0),
-			observers:             make(([]chan WSMessage), 0),
+			subscribers:           make(([]*subscriber), 0),
 		},
 	}
 	go a.runMonitor()
@@ -32,32 +32,43 @@ func NewApiHandlers(d *sql.DB) *ApiHandlers {
 	return a
 }
 
+type subscriber struct {
+	bufChan  chan WSMessage
+	quitChan chan bool
+
+	sync.RWMutex
+}
+
+func getSubscriber() *subscriber {
+	return &subscriber{bufChan: make(chan WSMessage, 50)} // TODO: Tune arbitrary size 50 as necessary. (Should be able to buffer at least 40 results for fill-in... Dynamic fill-in size maybe?)
+}
+
 type dbMonitor struct {
 	lastFifteenSecResTime time.Time
 	lastTenMinResTime     time.Time
 	latestFifteenSecRes   WSMessage
 	latestTenMinRes       WSMessage
-	observers             []chan WSMessage
+	subscribers           []*subscriber
 	sync.RWMutex
 }
 
 // getDBObserver gets a new channel that can be used to listen for database updates
-func (a *ApiHandlers) getDBObserver() chan WSMessage {
-	n := make(chan WSMessage)
+func (a *ApiHandlers) getDBSubscriber() *subscriber {
+	ns := getSubscriber()
 	a.monitor.Lock()
-	a.monitor.observers = append(a.monitor.observers, n)
+	a.monitor.subscribers = append(a.monitor.subscribers, ns)
 	a.monitor.Unlock()
-	defer a.notifyOfLatest(&n)
-	return n
+	defer a.notifyOfLatest(ns)
+	return ns
 }
 
 // notifyOfLatest adds the most recent values the monitor has collected to a (usually newly-created)
 // observer's channel, without blocking and preventing the observer from picking them up.
-func (a *ApiHandlers) notifyOfLatest(c *(chan WSMessage)) {
-	go func(ia *ApiHandlers, ic *(chan WSMessage)) {
-		*ic <- ia.monitor.latestFifteenSecRes
-		*ic <- ia.monitor.latestTenMinRes
-	}(a, c)
+func (a *ApiHandlers) notifyOfLatest(s *subscriber) {
+	go func(ia *ApiHandlers, is *subscriber) {
+		is.bufChan <- ia.monitor.latestFifteenSecRes
+		is.bufChan <- ia.monitor.latestTenMinRes
+	}(a, s)
 }
 
 // runMonitor starts the monitor for this ApiHandlers objects
@@ -79,9 +90,18 @@ func (a *ApiHandlers) runMonitor() {
 			}
 
 			// Notify all observers of update
-			for _, o := range a.monitor.observers {
+			for i := len(a.monitor.subscribers) - 1; i >= 0; i-- {
+				s := a.monitor.subscribers[i]
+
 				for _, r := range results {
-					o <- r
+					select {
+					case <-s.quitChan:
+						// This subscriber has been set to quit, so we'll remove it from our loop
+						a.monitor.subscribers = append(a.monitor.subscribers[:i], a.monitor.subscribers[i+1:]...)
+						close(s.bufChan) // TODO: Is this possible to panic? Any chance we async read after the close?
+					case s.bufChan <- r:
+						// Nothing to do, we've written out to the subscriber
+					}
 				}
 			}
 		}

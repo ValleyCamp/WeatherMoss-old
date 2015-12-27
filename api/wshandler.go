@@ -84,15 +84,16 @@ func reader(ws *websocket.Conn) {
 // writer runs in a goroutine for each connected WS client. It emits all message returned by the observer.
 func writer(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	observer := a.getDBObserver()
+	subscriber := a.getDBSubscriber()
 	defer func() {
+		subscriber.quitChan <- true
 		pingTicker.Stop()
 		ws.Close()
 	}()
 
 	for {
 		select {
-		case msg := <-observer:
+		case msg := <-subscriber.bufChan:
 			ws.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := ws.WriteJSON(msg); err != nil {
 				return
@@ -111,15 +112,16 @@ func writer(ws *websocket.Conn, a *ApiHandlers) {
 // TenMinute message.
 func writerTenMin(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	observer := a.getDBObserver()
+	subscriber := a.getDBSubscriber()
 	defer func() {
+		subscriber.quitChan <- true
 		pingTicker.Stop()
 		ws.Close()
 	}()
 
 	for {
 		select {
-		case msg := <-observer:
+		case msg := <-subscriber.bufChan:
 			if msg.MsgType == TenMinute {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := ws.WriteJSON(msg); err != nil {
@@ -140,15 +142,16 @@ func writerTenMin(ws *websocket.Conn, a *ApiHandlers) {
 // FifteenSecWind message.
 func writerFifteenSec(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	observer := a.getDBObserver()
+	subscriber := a.getDBSubscriber()
 	defer func() {
+		subscriber.quitChan <- true
 		pingTicker.Stop()
 		ws.Close()
 	}()
 
 	for {
 		select {
-		case msg := <-observer:
+		case msg := <-subscriber.bufChan:
 			if msg.MsgType == FifteenSecWind {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := ws.WriteJSON(msg); err != nil {
