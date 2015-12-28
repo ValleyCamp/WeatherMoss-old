@@ -4,7 +4,7 @@
 	"plugins": [],
 	"panes": [
 		{
-			"title": "Current Wind",
+			"title": "Current Wind (Every 15 sec over 3 hr)",
 			"width": 1,
 			"row": {
 				"2": 1,
@@ -46,7 +46,7 @@
 			]
 		},
 		{
-			"title": "Current (10-minute) conditions",
+			"title": "Current conditions. (Every 10 min over 8 hr)",
 			"width": 1,
 			"row": {
 				"2": 1,
@@ -124,7 +124,7 @@
 			]
 		},
 		{
-			"title": "Solar and UV (10-minute)",
+			"title": "Solar and UV (Every 10 min over 8 hr)",
 			"width": 1,
 			"row": {
 				"2": 21,
@@ -230,7 +230,7 @@
 			]
 		},
 		{
-			"title": "Wind (10-minute)",
+			"title": "Wind (Every 10 min over 8 hr)",
 			"width": 1,
 			"row": {
 				"2": 39,
