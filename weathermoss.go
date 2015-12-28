@@ -82,7 +82,7 @@ func main() {
 
 	// Redirect static resources, and then handle the static resources (/gui/) routes with the static asset file
 	router.Handle("/", http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		http.Redirect(response, request, "/gui/", 302)
+		http.Redirect(response, request, "gui/", 302)
 	}))
 	router.Get("/gui/", http.StripPrefix("/gui/", http.FileServer(&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""})))
 

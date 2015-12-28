@@ -8,7 +8,9 @@
     //if(location.hostname === 'localhost') {
     //    url += '/' + location.pathname.split('/')[1]; // add context path
     //}
-    return url + "/api/ws";
+    
+    url += location.pathname.replace(/gui\/freeboard.*$/, "api/ws")
+    return url;
   }
 
 	var jsonWebSocketDatasource = function(settings, updateCallback)
