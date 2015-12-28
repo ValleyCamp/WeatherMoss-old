@@ -84,16 +84,18 @@ func reader(ws *websocket.Conn) {
 // writer runs in a goroutine for each connected WS client. It emits all message returned by the observer.
 func writer(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	subscriber := a.getDBSubscriber()
-	defer func() {
-		subscriber.quitChan <- true
+	s := a.getDBSubscriber()
+	jww.INFO.Println("Opened WebSocket connection.")
+	defer func(is *subscriber) {
+		jww.INFO.Println("Closing WebSocket connection.")
+		is.quitChan <- true
 		pingTicker.Stop()
 		ws.Close()
-	}()
+	}(s)
 
 	for {
 		select {
-		case msg := <-subscriber.bufChan:
+		case msg := <-s.bufChan:
 			ws.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := ws.WriteJSON(msg); err != nil {
 				return
@@ -112,16 +114,18 @@ func writer(ws *websocket.Conn, a *ApiHandlers) {
 // TenMinute message.
 func writerTenMin(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	subscriber := a.getDBSubscriber()
-	defer func() {
-		subscriber.quitChan <- true
+	s := a.getDBSubscriber()
+	jww.INFO.Println("Opened 10Minute WebSocket connection.")
+	defer func(is *subscriber) {
+		jww.INFO.Println("Closing 10Minute Websocket Connection.")
+		is.quitChan <- true
 		pingTicker.Stop()
 		ws.Close()
-	}()
+	}(s)
 
 	for {
 		select {
-		case msg := <-subscriber.bufChan:
+		case msg := <-s.bufChan:
 			if msg.MsgType == TenMinute {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := ws.WriteJSON(msg); err != nil {
@@ -142,16 +146,18 @@ func writerTenMin(ws *websocket.Conn, a *ApiHandlers) {
 // FifteenSecWind message.
 func writerFifteenSec(ws *websocket.Conn, a *ApiHandlers) {
 	pingTicker := time.NewTicker(pingPeriod)
-	subscriber := a.getDBSubscriber()
-	defer func() {
-		subscriber.quitChan <- true
+	s := a.getDBSubscriber()
+	jww.INFO.Println("Opened 15Sec WebSocket connection.")
+	defer func(is *subscriber) {
+		jww.INFO.Println("Closing 15Sec Websocket Connection.")
+		is.quitChan <- true
 		pingTicker.Stop()
 		ws.Close()
-	}()
+	}(s)
 
 	for {
 		select {
-		case msg := <-subscriber.bufChan:
+		case msg := <-s.bufChan:
 			if msg.MsgType == FifteenSecWind {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := ws.WriteJSON(msg); err != nil {

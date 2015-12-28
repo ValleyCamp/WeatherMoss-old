@@ -40,7 +40,10 @@ type subscriber struct {
 }
 
 func getSubscriber() *subscriber {
-	return &subscriber{bufChan: make(chan WSMessage, 50)} // TODO: Tune arbitrary size 50 as necessary. (Should be able to buffer at least 40 results for fill-in... Dynamic fill-in size maybe?)
+	return &subscriber{
+		bufChan:  make(chan WSMessage, 50),
+		quitChan: make(chan bool),
+	} // TODO: Tune arbitrary size 50 as necessary. (Should be able to buffer at least 40 results for fill-in... Dynamic fill-in size maybe?)
 }
 
 type dbMonitor struct {
@@ -57,8 +60,11 @@ func (a *ApiHandlers) getDBSubscriber() *subscriber {
 	ns := getSubscriber()
 	a.monitor.Lock()
 	a.monitor.subscribers = append(a.monitor.subscribers, ns)
+	cl := len(a.monitor.subscribers)
 	a.monitor.Unlock()
-	defer a.notifyOfLatest(ns)
+	jww.INFO.Println("Subscriber Created. There are now", cl, "subscribers.")
+	//defer a.notifyOfLatest(ns)
+	defer a.backfill(ns)
 	return ns
 }
 
@@ -71,15 +77,83 @@ func (a *ApiHandlers) notifyOfLatest(s *subscriber) {
 	}(a, s)
 }
 
+// backfill gets the last 40 results of each table and pushes them, in-order, onto the websocket queue.
+// This allows the new subscriber to recieve enough data to fill in charts and graphs immediately.
+func (a *ApiHandlers) backfill(s *subscriber) {
+	go func(ia *ApiHandlers, is *subscriber) {
+		rows, err := a.db.Query("SELECT * FROM ( SELECT * FROM housestation_15sec_wind ORDER BY ID DESC LIMIT 40 ) AS t ORDER BY ID")
+		if err != nil {
+			jww.ERROR.Println(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			f := FifteenSecWindMsg{}
+			err := rows.Scan(&f.ID, &f.DateTime, &f.WindDirCur, &f.WindDirCurEng, &f.WindSpeedCur)
+			if err != nil {
+				jww.ERROR.Println(err)
+			}
+
+			r1 := WSMessage{
+				MsgType: FifteenSecWind,
+				Payload: f,
+			}
+
+			is.bufChan <- r1
+
+		}
+		err = rows.Err()
+		if err != nil {
+			jww.ERROR.Println(err)
+		}
+
+		// See if there's an updated 10 minute result
+		trrows, err := a.db.Query("SELECT * FROM (SELECT * FROM housestation_10min_all ORDER BY ID DESC LIMIT 40) AS t ORDER BY ID")
+		if err != nil {
+			jww.ERROR.Println(err)
+		}
+		defer trrows.Close()
+		for trrows.Next() {
+			t := TenMinAllRow{}
+			err := trrows.Scan(&t.ID, &t.DateTime, &t.TempOutCur, &t.HumOutCur, &t.PressCur, &t.DewCur, &t.HeatIdxCur, &t.WindChillCur, &t.TempInCur,
+				&t.HumInCur, &t.WindSpeedCur, &t.WindAvgSpeedCur, &t.WindDirCur, &t.WindDirCurEng, &t.WindGust10, &t.WindDirAvg10, &t.WindDirAvg10Eng,
+				&t.UVAvg10, &t.UVMax10, &t.SolarRadAvg10, &t.SolarRadMax10, &t.RainRateCur, &t.RainDay, &t.RainYest, &t.RainMonth, &t.RainYear)
+			if err != nil {
+				jww.ERROR.Println(err)
+			}
+
+			r2 := WSMessage{MsgType: TenMinute, Payload: t}
+			is.bufChan <- r2
+		}
+	}(a, s)
+}
+
 // runMonitor starts the monitor for this ApiHandlers objects
 func (a *ApiHandlers) runMonitor() {
 	dbTicker := time.NewTicker(dbPollPeriod)
+	cleanupTicker := time.NewTicker(5 * time.Second)
 	defer func() {
 		dbTicker.Stop()
+		cleanupTicker.Stop()
 	}()
 
 	for {
 		select {
+		case <-cleanupTicker.C:
+			a.monitor.RLock()
+			for i := len(a.monitor.subscribers) - 1; i >= 0; i-- {
+				s := a.monitor.subscribers[i]
+				select {
+				case <-s.quitChan:
+					// This subscriber has been set to quit, so we'll remove it from our loop
+					a.monitor.subscribers = append(a.monitor.subscribers[:i], a.monitor.subscribers[i+1:]...)
+					sc := len(a.monitor.subscribers)
+					close(s.bufChan) // TODO: Is this possible to panic? Any chance we async read after the close?
+					jww.INFO.Println("Subscriber Closed. There are now", sc, "subscribers.")
+				default:
+					// Nothing, we just carry on
+				}
+			}
+			a.monitor.RUnlock()
 		case <-dbTicker.C:
 			results, err := pollDB(a)
 
@@ -95,12 +169,12 @@ func (a *ApiHandlers) runMonitor() {
 
 				for _, r := range results {
 					select {
-					case <-s.quitChan:
-						// This subscriber has been set to quit, so we'll remove it from our loop
-						a.monitor.subscribers = append(a.monitor.subscribers[:i], a.monitor.subscribers[i+1:]...)
-						close(s.bufChan) // TODO: Is this possible to panic? Any chance we async read after the close?
 					case s.bufChan <- r:
 						// Nothing to do, we've written out to the subscriber
+					default:
+						// This should only occur if we coludn't write to the buffered channel, which only happens if it's full
+						// TODO: could this also occur when the pollDB doesn't have a result?
+						jww.ERROR.Println("subscriber buffer overflowed!")
 					}
 				}
 			}
