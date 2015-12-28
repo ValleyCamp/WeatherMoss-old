@@ -88,7 +88,7 @@
 						"value": "datasources[\"ws10min\"][\"payload\"][\"PressCur\"]",
 						"sparkline": true,
 						"animate": true,
-						"units": "Millibars (?)"
+						"units": "millibars"
 					}
 				},
 				{
@@ -108,7 +108,7 @@
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainRateCur\"]",
 						"sparkline": true,
 						"animate": true,
-						"units": "In/Hr (?)"
+						"units": "In/Hr"
 					}
 				},
 				{
@@ -163,7 +163,8 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"SolarRadAvg10\"]",
 						"sparkline": true,
-						"animate": true
+						"animate": true,
+						"units": "W/M²"
 					}
 				},
 				{
@@ -173,7 +174,9 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"SolarRadMax10\"]",
 						"sparkline": true,
-						"animate": true
+						"animate": true,
+						"units": "W/M²"
+
 					}
 				}
 			]
@@ -197,7 +200,9 @@
 						"title": "Today",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainDay\"]",
-						"animate": true
+						"animate": true,
+						"units": "Inches"
+
 					}
 				},
 				{
@@ -206,7 +211,8 @@
 						"title": "Yesterday",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainYest\"]",
-						"animate": true
+						"animate": true,
+						"units": "Inches"
 					}
 				},
 				{
@@ -215,7 +221,8 @@
 						"title": "Month-to-date",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainMonth\"]",
-						"animate": true
+						"animate": true,
+						"units": "Inches"
 					}
 				},
 				{
@@ -224,7 +231,8 @@
 						"title": "Year-to-date",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainYear\"]",
-						"animate": true
+						"animate": true,
+						"units": "Inches"
 					}
 				}
 			]
