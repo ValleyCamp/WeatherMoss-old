@@ -41,9 +41,9 @@ type subscriber struct {
 
 func getSubscriber() *subscriber {
 	return &subscriber{
-		bufChan:  make(chan WSMessage, 50),
+		bufChan:  make(chan WSMessage, 110),
 		quitChan: make(chan bool),
-	} // TODO: Tune arbitrary size 50 as necessary. (Should be able to buffer at least 40 results for fill-in... Dynamic fill-in size maybe?)
+	} // TODO: Tune arbitrary size 110 as necessary. Designed to allow full backfill of 100 results to a combined subscriber
 }
 
 type dbMonitor struct {
@@ -81,7 +81,7 @@ func (a *ApiHandlers) notifyOfLatest(s *subscriber) {
 // This allows the new subscriber to recieve enough data to fill in charts and graphs immediately.
 func (a *ApiHandlers) backfill(s *subscriber) {
 	go func(ia *ApiHandlers, is *subscriber) {
-		rows, err := a.db.Query("SELECT * FROM ( SELECT * FROM housestation_15sec_wind ORDER BY ID DESC LIMIT 40 ) AS t ORDER BY ID")
+		rows, err := a.db.Query("SELECT * FROM ( SELECT * FROM housestation_15sec_wind ORDER BY ID DESC LIMIT 50 ) AS t ORDER BY ID")
 		if err != nil {
 			jww.ERROR.Println(err)
 		}
@@ -107,7 +107,7 @@ func (a *ApiHandlers) backfill(s *subscriber) {
 		}
 
 		// See if there's an updated 10 minute result
-		trrows, err := a.db.Query("SELECT * FROM (SELECT * FROM housestation_10min_all ORDER BY ID DESC LIMIT 40) AS t ORDER BY ID")
+		trrows, err := a.db.Query("SELECT * FROM (SELECT * FROM housestation_10min_all ORDER BY ID DESC LIMIT 50) AS t ORDER BY ID")
 		if err != nil {
 			jww.ERROR.Println(err)
 		}

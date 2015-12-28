@@ -8,7 +8,7 @@
 // └────────────────────────────────────────────────────────────────────┘ \\
 
 (function () {
-	var SPARKLINE_HISTORY_LENGTH = 100;
+	var SPARKLINE_HISTORY_LENGTH = 50;
 	var SPARKLINE_COLORS = ["#FF9900", "#FFFFFF", "#B3B4B4", "#6B6B6B", "#28DE28", "#13F7F9", "#E6EE18", "#C41204", "#CA3CB8", "#0B1CFB"];
 
     function easeTransitionText(newValue, textElement, duration) {
