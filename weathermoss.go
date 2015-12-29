@@ -45,7 +45,7 @@ func main() {
 	appconf, err := getConfigFromFile(*flgConfigPath)
 	if err != nil {
 		jww.FATAL.Println("Configuration Error:", err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// Set up something to handle ctrl-c/kill cleanup!
