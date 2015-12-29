@@ -24,7 +24,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws15sec\"][\"payload\"][\"WindSpeedCur\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "MPH"
 					}
 				},
@@ -59,7 +59,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"TempOutCur\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "°F"
 					}
 				},
@@ -70,7 +70,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"WindChillCur\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "°F"
 					}
 				},
@@ -81,7 +81,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"HumOutCur\"]",
 						"sparkline": true,
-						"animate": true
+						"animate": false
 					}
 				},
 				{
@@ -91,7 +91,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"HeatIdxCur\"]",
 						"sparkline": true,
-						"animate": true
+						"animate": false
 					}
 				},
 				{
@@ -101,7 +101,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"PressCur\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "millibars"
 					}
 				},
@@ -112,7 +112,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainRateCur\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "In/Hr"
 					}
 				}
@@ -140,7 +140,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"UVAvg10\"]",
 						"sparkline": true,
-						"animate": true
+						"animate": false
 					}
 				},
 				{
@@ -150,7 +150,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"UVMax10\"]",
 						"sparkline": true,
-						"animate": true
+						"animate": false
 					}
 				},
 				{
@@ -160,7 +160,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"SolarRadAvg10\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "W/M²"
 					}
 				},
@@ -171,7 +171,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"SolarRadMax10\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "W/M²"
 					}
 				}
@@ -199,7 +199,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"WindGust10\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "MPH"
 					}
 				},
@@ -210,7 +210,7 @@
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"WindAvgSpeedCur\"]",
 						"sparkline": true,
-						"animate": true,
+						"animate": false,
 						"units": "MPH"
 					}
 				},
@@ -220,7 +220,7 @@
 						"title": "Average Direction",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"WindDirAvg10Eng\"]",
-						"animate": true
+						"animate": false
 					}
 				}
 			]
@@ -246,7 +246,7 @@
 						"title": "Today",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainDay\"]",
-						"animate": true,
+						"animate": false,
 						"units": "Inches"
 					}
 				},
@@ -256,7 +256,7 @@
 						"title": "Yesterday",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainYest\"]",
-						"animate": true,
+						"animate": false,
 						"units": "Inches"
 					}
 				},
@@ -266,7 +266,7 @@
 						"title": "Month-to-date",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainMonth\"]",
-						"animate": true,
+						"animate": false,
 						"units": "Inches"
 					}
 				},
@@ -276,7 +276,7 @@
 						"title": "Year-to-date",
 						"size": "regular",
 						"value": "datasources[\"ws10min\"][\"payload\"][\"RainYear\"]",
-						"animate": true,
+						"animate": false,
 						"units": "Inches"
 					}
 				}
