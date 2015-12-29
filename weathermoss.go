@@ -25,7 +25,13 @@ func main() {
 	flgVerbose := flag.Bool("verbose", false, "Output additional debugging information to both STDOUT and the log file")
 	flgPortNum := flag.Int("port", 8777, "The port to run the HTTP server on.") // 8777 = "WM"
 	flgConfigPath := flag.String("conf", "weathermoss-conf.json", "Path to the config JSON file")
+	flgVersion := flag.Bool("version", false, "Show version information and quit.")
 	flag.Parse()
+
+	if *flgVersion {
+		fmt.Println("Weathermoss version", version)
+		os.Exit(0)
+	}
 
 	// Note at this point only WARN or above is actually logged to file, and ERROR or above to console.
 	jww.SetLogFile("weathermoss.log")
