@@ -18,6 +18,11 @@
 		var self = this;
 		var currentSettings = settings;
 		var ws;
+
+    var raiseReloadOverlay=function()
+    {
+      document.body.innerHTML = "<h1>Connection Error</h1><h2>Please reload the page.</h2>";
+    }
 		
 		var onOpen=function()
 		{
@@ -27,6 +32,7 @@
 		var onClose=function()
 		{
 			console.info("WebSocket Closed");
+      raiseReloadOverlay();
 		}
 		
 		var onMessage=function(event)
@@ -60,7 +66,7 @@
 			ws.onmessage=onMessage;
 		}
 		
-		createWebSocket();
+		//createWebSocket();
 
 		this.updateNow = function()
 		{
