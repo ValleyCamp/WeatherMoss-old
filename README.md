@@ -1,7 +1,10 @@
 # WeatherMoss
 
-The official weather API of ValleyCamp.
+The official weather API of [ValleyCamp](http://valleycamp.org). Visit the [Dashboard](http://actual.valleycamp.org/weathermoss/gui/freeboard/#source=dashboard.json) to see it in action.
+
 On-Site we have a Davis Vantage Pro 2 weather station and a [MeteoBridge](http://meteobridge.com). In addition to uploading data to various weather services the Meteobridge device will log data into a MySQL database, which this API will call against. We may also try to have the API pull live data directly from the meteobridge.
+
+The application is a Go binary compiled for freebsd and deployed on-site. It provides JSON data via the REST API and WebSocket connections. There may be connection issues due to the nature of the "High Speed" internet connection on-site, so applications calling against the API should expect potential network dropouts or high latency.
 
 
 ## MySQL Database.
